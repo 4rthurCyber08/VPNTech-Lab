@@ -18,8 +18,8 @@ CCNP Day 5
 
 | ISP | ASN   |
 | --- | ---   |
-| I1  | 12    |
-| I2  | 12    |
+| I1  | 1     |
+| I2  | 2     |
 | I3  | 3     |
 | Ex  | 12345 |
 
@@ -27,10 +27,10 @@ CCNP Day 5
 ~~~
 !@I1
 conf t
- no router bgp 12
+ no router bgp 1
  router bgp 12
   bgp log-neighbor-changes
-  neighbor 12.1.2.2 remote-as 12
+  neighbor 12.1.2.2 remote-as 2
   neighbor 13.1.3.3 remote-as 3
   neighbor 1.10.1.10 remote-as 12345
   neighbor 3.30.3.30 remote-as 12345
@@ -52,16 +52,17 @@ conf t
 ~~~
 !@I2
 conf t
- no router bgp 12
+ no router bgp 2
  router bgp 12
   bgp log-neighbor-changes
-  neighbor 12.1.2.1 remote-as 12
+  neighbor 12.1.2.1 remote-as 1
   neighbor 2.20.2.20 remote-as 12345
   neighbor 5.50.5.50 remote-as 12345
   address-family ipv4
    neighbor 12.1.2.1 activate
    neighbor 2.20.2.20 activate
    neighbor 5.50.5.50 activate
+   neighbor 5.50.5.50 as-override
    network 12.1.2.0 mask 255.255.255.0
    network 2.20.2.0 mask 255.255.255.0
    network 5.50.5.0 mask 255.255.255.0
@@ -76,11 +77,12 @@ conf t
  no router bgp 3
  router bgp 3
   bgp log-neighbor-changes
-  neighbor 13.1.3.1 remote-as 12
+  neighbor 13.1.3.1 remote-as 1
   neighbor 4.40.4.40 remote-as 12345
   address-family ipv4
    neighbor 13.1.3.1 activate
    neighbor 4.40.4.40 activate
+   neighbor 4.40.4.40 as-override
    network 13.1.3.0 mask 255.255.255.0 
    network 4.40.4.0 mask 255.255.255.0
    end
@@ -91,13 +93,16 @@ conf t
 ~~~
 !@E1
 conf t
+ int lo0
+  ip add 1.1.1.1 255.255.255.255
  no router bgp 12345
  router bgp 12345
   bgp log-neighbor-changes
-  neighbor 1.10.1.1 remote-as 12
+  neighbor 1.10.1.1 remote-as 1
   address-family ipv4
    neighbor 1.10.1.1 activate
    network 1.10.1.0 mask 255.255.255.0
+   network 1.1.1.1 mask 255.255.255.255
    end
 ~~~
 
@@ -109,9 +114,10 @@ conf t
  no router bgp 12345
  router bgp 12345
   bgp log-neighbor-changes
-  neighbor 2.20.2.2 remote-as 12
+  neighbor 2.20.2.2 remote-as 2
   address-family ipv4
    neighbor 2.20.2.2 activate
+   neighbor 2.20.2.2 allowas-in
    network 2.20.2.0 mask 255.255.255.0
    end
 ~~~
@@ -124,9 +130,10 @@ conf t
  no router bgp 12345
  router bgp 12345
   bgp log-neighbor-changes
-  neighbor 3.30.3.1 remote-as 12
+  neighbor 3.30.3.1 remote-as 1
   address-family ipv4
    neighbor 3.30.3.1 activate
+   neighbor 3.30.3.1 allowas-in 
    network 3.30.3.0 mask 255.255.255.0
    end
 ~~~
@@ -154,135 +161,10 @@ conf t
  no router bgp 12345
  router bgp 12345
   bgp log-neighbor-changes
-  neighbor 5.50.5.2 remote-as 12
+  neighbor 5.50.5.2 remote-as 2
   address-family ipv4
    neighbor 5.50.5.2 activate
    network 5.50.5.0 mask 255.255.255.0
-   end
-~~~
-
-
-&nbsp;
----
-&nbsp;
-
-
-### BGP Confederations
-
-~~~
-!@I1
-conf t
- no router bgp 12
- router bgp 65001
-  bgp confederation identifier 12
-  bgp confederation peers 65002
-  bgp log-neighbor-changes
-  neighbor 12.1.2.2 remote-as 65002
-  neighbor 13.1.3.3 remote-as 3
-  neighbor 1.10.1.10 remote-as 12345
-  neighbor 3.30.3.30 remote-as 12345
-  address-family ipv4
-   neighbor 12.1.2.2 activate
-   neighbor 13.1.3.3 activate
-   neighbor 1.10.1.10 activate
-   neighbor 3.30.3.30 activate
-   network 12.1.2.0 mask 255.255.255.0
-   network 13.1.3.0 mask 255.255.255.0
-   network 1.10.1.0 mask 255.255.255.0
-   network 3.30.3.0 mask 255.255.255.0
-   network 8.8.8.8 mask 255.255.255.255
-   end
-~~~
-
-<br>
-
-~~~
-!@I2
-conf t
- no router bgp 12
- router bgp 65002
-  bgp confederation identifier 12
-  bgp confederation peers 65001
-  bgp log-neighbor-changes
-  neighbor 12.1.2.1 remote-as 65001
-  neighbor 2.20.2.20 remote-as 12345
-  neighbor 5.50.5.50 remote-as 12345
-  address-family ipv4
-   neighbor 12.1.2.1 activate
-   neighbor 2.20.2.20 activate
-   neighbor 5.50.5.50 activate
-   network 12.1.2.0 mask 255.255.255.0
-   network 2.20.2.0 mask 255.255.255.0
-   network 5.50.5.0 mask 255.255.255.0
-   end
-~~~
-
-
-&nbsp;
----
-&nbsp;
-
-
-### AllowAS-In & AS-Override
-BGP Routers drop advertised routes with its own ASN.
-
-~~~
-!@E1
-conf t
- int lo0
-  ip add 1.1.1.1 255.255.255.255
- router bgp 12345
-  address-family ipv4
-   network 1.1.1.1 mask 255.255.255.255
-   end
-~~~
-
-<br>
-
-__AllowAS-In__
-~~~
-!@E2
-conf t
- router bgp 12345
-  address-family ipv4
-   neighbor 2.20.2.2 allowas-in
-   end
-~~~
-
-<br>
-
-~~~
-!@E3
-conf t
- router bgp 12345
-  address-family ipv4
-   neighbor 3.30.3.1 allowas-in 
-   end
-~~~
-
-
-<br>
-<br>
-
-
-__AS-Override__
-~~~
-!@I2
-conf t
- router bgp 65002
-  address-family ipv4
-   neighbor 5.50.5.50 as-override
-   end
-~~~
-
-<br>
-
-~~~
-!@I3
-conf t
- router bgp 3
-  address-family ipv4
-   neighbor 4.40.4.40 as-override
    end
 ~~~
 
