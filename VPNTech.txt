@@ -1,7 +1,99 @@
-# Setup
+# Dynamic Multipoint VPN
 
+![DMVPN](img/DMVPN.png)
+
+
+&nbsp;
+---
+&nbsp;
+
+
+## Setup
+`VMWare` > `Edit` > `Virtual Network Editor`  
+
+<br>
+
+Add/Edit the following VMNets:  
+
+| VMNet 2    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.102.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 3    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.103.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 4    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.104.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 5    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.105.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 6    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.106.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 8    |               |
+| ---        | ---           |
+| VMNet Info | NAT           |
+| IP address | 208.8.8.0     |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 	
+
+<br>
+
+| VMNet 15   |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 10.255.10.0   |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Checked       | 
+
+<br>
+
+| VMNet 16   |                 |
+| ---        | ---             |
+| VMNet Info | Host-only       |
+| IP address | 10.69.255.0     |
+| Net Mask   | 255.255.255.248 |
+| DHCP       | Checked         | 
+
+
+&nbsp;
+---
+&nbsp;
+
+
+## PRECONFIGS
 - Windows Server
-- VPN
+- VPNSec Lab
 
 ~~~
 !@WinVM-cmd
@@ -9,12 +101,12 @@ route add 172.16.29.0 mask 255.255.255.0 10.69.255.6
 ~~~
 
 
+&nbsp;
+---
+&nbsp;
 
-CCNP Day 5
 
-# DMVPN Lab 
-
-## BGP
+### BGP
 
 | ISP | ASN   |
 | --- | ---   |
@@ -169,18 +261,16 @@ conf t
 ~~~
 
 
-<br>
-<br>
-
+&nbsp;
 ---
 &nbsp;
 
 
-## DMVPN
+### PHASE 1 - IKEv2
 
-__PHASE 1__
+__HUB__
 ~~~
-!@E1,E2,E3,E4,E5
+!@E1,E2
 conf t
  crypto ikev2 proposal PROP1
   encr aes-cbc-256
@@ -196,28 +286,12 @@ conf t
   proposal PROP2
  !
  crypto ikev2 keyring KEY1
-  peer E1
-   address 1.10.1.10 255.255.255.255
-   pre-shared-key C1sc0123
-  peer E2
-   address 2.20.2.20 255.255.255.255
-   pre-shared-key C1sc0123
-  peer E3
-   address 3.30.3.30 255.255.255.255
-   pre-shared-key C1sc0123
-  peer E4
-   address 4.40.4.40 255.255.255.255
-   pre-shared-key C1sc0123
-  peer E5
-   address 5.50.5.50 255.255.255.255
+  peer DMVPN-EDGES
+   address 0.0.0.0  0.0.0.0
    pre-shared-key C1sc0123
  !
  crypto ikev2 profile IKEV2-PROF1
-  match identity remote address 1.10.1.10
-  match identity remote address 2.20.2.20
-  match identity remote address 3.30.3.30
-  match identity remote address 4.40.4.40
-  match identity remote address 5.50.5.50
+  match identity remote address 0.0.0.0  0.0.0.0
   authentication remote pre-share
   authentication local pre-share
   keyring local KEY1
@@ -226,7 +300,48 @@ conf t
 
 <br>
 
-__PHASE 2__
+__SPOKES__
+~~~
+!@E3,E4,E5
+conf t
+ crypto ikev2 proposal PROP1
+  encr aes-cbc-256
+  integrity sha256
+  group 14
+ crypto ikev2 proposal PROP2
+  encr aes-gcm-256
+  prf sha256
+  group 14
+ !
+ crypto ikev2 policy IKEV2-POL1
+  proposal PROP1
+  proposal PROP2
+ !
+ crypto ikev2 keyring KEY1
+  peer HUB1
+   address 1.10.1.10 255.255.255.255
+   pre-shared-key C1sc0123
+  peer HUB2
+   address 2.20.2.20 255.255.255.255
+   pre-shared-key C1sc0123
+ !
+ crypto ikev2 profile IKEV2-PROF1
+  match identity remote address 1.10.1.10
+  match identity remote address 2.20.2.20
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local KEY1
+  end
+~~~
+
+
+&nbsp;
+---
+&nbsp;
+
+
+### PHASE 2 - IPSec
+
 ~~~
 !@E1,E2,E3,E4,E5
 conf t
@@ -368,7 +483,7 @@ conf t
 &nbsp;
 
 
-### Routing
+### Routing : EIGRP
 
 ~~~
 !@E1
@@ -477,8 +592,169 @@ conf t
 ~~~
 
 
+&nbsp;
+---
+&nbsp;
+
+
+### Routing: OSPF
+
+~~~
+!@E1
+conf t
+ router ospf 1
+  network 10.1.1.0 0.0.0.3 area 0
+  network 172.16.1.0 0.0.0.255 area 0
+ !
+ int tunnel0
+  ip ospf network point-to-multipoint
+  end
+~~~
+
+<br>
+
+~~~
+!@S1
+conf t
+ ip route 0.0.0.0 0.0.0.0 10.1.1.2
+ end
+~~~
+
+<br>
+
+~~~
+!@E2
+conf t
+ router ospf 1 
+  network 10.2.2.0 0.0.0.3 area 0
+  network 172.16.1.0 0.0.0.255 area 0
+ !
+ int tunnel0
+  ip ospf network point-to-multipoint
+  end
+~~~
+
+<br>
+
+~~~
+!@S2
+conf t
+ ip route 0.0.0.0 0.0.0.0 10.2.2.2
+ end
+~~~
+
+<br>
+
+~~~
+!@E3
+conf t
+ router ospf 1
+  network 192.168.3.0 0.0.0.255 area 0
+  network 172.16.1.0 0.0.0.255 area 0
+ int tunnel0
+  ip ospf network point-to-multipoint
+  end
+~~~
+
+<br>
+
+~~~
+!@P1
+conf t
+ ip route 0.0.0.0 0.0.0.0 192.168.3.3
+ end
+~~~
+
+<br>
+
+~~~
+!@E4
+conf t
+ router ospf 1
+  network 192.168.4.0 0.0.0.255 area 0
+  network 172.16.1.0 0.0.0.255 area 0
+ int tunnel0
+  ip ospf network point-to-multipoint
+  end
+~~~
+
+<br>
+
+~~~
+!@P2
+conf t
+ ip route 0.0.0.0 0.0.0.0 192.168.4.4
+ end
+~~~
+
+<br>
+
+~~~
+!@E5
+conf t
+ router ospf 1
+  network 192.168.5.0 0.0.0.255 area 0
+  network 172.16.1.0 0.0.0.255 area 0
+ int tunnel0
+  ip ospf network point-to-multipoint
+  end
+~~~
+
+<br>
+
+~~~
+!@P3
+conf t
+ ip route 0.0.0.0 0.0.0.0 192.168.5.5
+ end
+~~~
+
+
 <br>
 <br>
+
+---
+&nbsp;
+
+
+### Exercise: Verify and TShoot the DMVPN Configurations
+~~~
+!@P1
+traceroute 192.168.5.103
+~~~
+
+<br>
+
+~~~
+!@E3,E4,E5
+conf t
+ crypto ikev2 keyring KEY1
+  peer E3
+   address 3.30.3.30 255.255.255.255
+   pre-shared-key C1sc0123
+  peer E4
+   address 4.40.4.40 255.255.255.255
+   pre-shared-key C1sc0123
+  peer E5
+   address 5.50.5.50 255.255.255.255
+   pre-shared-key C1sc0123
+ !
+ crypto ikev2 profile IKEV2-PROF1
+  match identity remote address 1.10.1.10
+  match identity remote address 2.20.2.20
+  match identity remote address 3.30.3.30
+  match identity remote address 4.40.4.40
+  match identity remote address 5.50.5.50
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local KEY1
+  end
+~~~
+
+
+&nbsp;
+---
+&nbsp;
 
 
 ### Tunnel Settings
@@ -504,17 +780,69 @@ conf t
 
 # DMVPN : Certificate Auth
 
-__DNS__
-| Domain        | IP Address |
-| ---           | ---        |
-| e1.ccnp92.com | 1.10.1.10  |
-| e2.ccnp92.com | 2.20.2.20  |
-| e3.ccnp92.com | 3.30.3.30  |
-| e4.ccnp92.com | 4.40.4.40  |
-| e5.ccnp92.com | 5.50.5.50  |
+### STEP 1 - Setup WinServer
+
+| NetAdapter  | VMNet   | IP Address    | 
+| ---         | ---     | ---           |
+| 1           | NAT     | 208.8.8.8     |
+| 2           | VMNet2  | 192.168.102.8 |
+| 3           | VMNet16 | 10.69.255.4   |
+
+<br>
+
+~~~
+!@Powershell
+set-netfirewallprofile -name private,public,domain -enabled false
+rename-computer ccnp#$34T#.com
+ncpa.cpl
+~~~
+
+<br>
+
+~~~
+!@WinVM-cmd
+route add 172.16.29.0 mask 255.255.255.0 10.69.255.6 -p
+~~~
 
 
+&nbsp;
+---
+&nbsp;
 
+
+### STEP 2 - Install Active Directory Domains and Services
+Create a Service Account:
+- Active Directory and Users and Computers
+
+| New User    |              |
+| ---         | ---          |
+| User Name   | ca           |
+| Full Name   | CERTAUTH     |
+| Password    | C1sc0123     |
+| Pass Policy | Never Expire |
+| Member of   | IIS_IUSRS    |
+
+
+&nbsp;
+---
+&nbsp;
+
+
+### STEP 3 - Install Active Directory Certificate Services
+
+Afterwards, install ADCS Add-Ons:
+- Certificate Enrollment Policy Web Service  
+- Certificate Enrollment Web Service         
+- Certificate Authority Web Enrollment
+- Network Device Enrollment Service
+
+
+&nbsp;
+---
+&nbsp;
+
+
+### STEP 4 - Configure Certificates on Cisco
 __TRUSTPOINTS__
 ~~~
 !@E1
@@ -630,11 +958,47 @@ conf t
 ~~~
 
 
+&nbsp;
+---
+&nbsp;
+
+
+### STEP 6 - Access CA Web Enrollment
+
+http://10.69.255.4/certsrv/mscep/mscep.dll  
+
+
 <br>
 <br>
 
+Grab the Hash & Challenge Password    
+- Hash: ___________    
+- Pass: ___________  
 
-__Modify DMVPN Authentication__
+
+&nbsp;
+---
+&nbsp;
+
+
+### STEP 7 - Enroll Network Devices
+
+~~~
+!@E1,E2,E3,E4,E5
+conf t
+ crypto pki enroll CCNPTRUST
+
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### VERIFICATION - Modify DMVPN Tunnel to use RSA-SIGNATURE
 ~~~
 !@E1,E2,E3,E4,E5
 conf t
@@ -834,17 +1198,3 @@ conf t
 sh ip lisp map-cache 
 ~~~
 
-<br>
-
-# Ansible
-# EEM
-
-
-# FHRP
-# IP SLA
-# Time-Based ACL
-# Syslog
-# QoS
-# CoPP
-# NetFlow
-# 
