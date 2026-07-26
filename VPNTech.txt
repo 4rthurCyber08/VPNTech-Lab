@@ -348,6 +348,26 @@ conf t
 &nbsp;
 
 
+### IPSec VPN Prefragmentation
+- Pre-fragmentation for IPsec VPNs operates in IPsec tunnel mode and IPsec tunnel mode with GRE, but not with IPsec transport mode. 
+
+~~~
+!@E1,E2,E3,E4,E5
+conf t
+ crypto ipsec transform-set TS1 esp-aes 256 esp-sha256-hmac
+  mode tunnel
+ crypto ipsec transform-set TS2 esp-gcm 256
+  mode tunnel
+ crypto ipsec fragmentation before-encryption
+ end
+~~~
+
+
+&nbsp;
+---
+&nbsp;
+
+
 ### Routing
 
 ~~~
@@ -457,7 +477,9 @@ conf t
 ~~~
 
 
-&nbsp;
+<br>
+<br>
+
 ---
 &nbsp;
 
