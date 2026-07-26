@@ -480,6 +480,24 @@ conf t
 <br>
 <br>
 
+
+### Tunnel Settings
+
+~~~
+!@E1,E2,E3,E4,E5
+conf t
+ int tun0
+  ip mtu 1400
+  ip tcp adjust-mss 1360
+  bandwidth 100000
+  delay 1000
+  end
+~~~
+
+
+<br>
+<br>
+
 ---
 &nbsp;
 
